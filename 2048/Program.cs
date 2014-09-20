@@ -10,6 +10,7 @@ namespace _2048
     {
         static void Main(string[] args)
         {
+            
         }
     }
 }
