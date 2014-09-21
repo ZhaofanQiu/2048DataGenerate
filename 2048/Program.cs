@@ -10,7 +10,8 @@ namespace _2048
     {
         static void Main(string[] args)
         {
-            
+            Table.InitTables();
+            Table.PlayGame(4);
         }
     }
 }
