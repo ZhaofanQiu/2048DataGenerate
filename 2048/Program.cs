@@ -4,14 +4,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace _2048
+using Board = System.UInt64;
+using Row = System.UInt16;
+
+namespace _2048AI
 {
     class Program
     {
         static void Main(string[] args)
         {
-            Table.InitTables();
-            Table.PlayGame(4);
+            BoardControl.Initialize();
+            PreScore.Initialize();
+            PlayGame.Play(_2048AI.AI.SearchMove);
         }
     }
 }
