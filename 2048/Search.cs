@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 using Board = System.UInt64;
 using Row = System.UInt16;
@@ -13,8 +14,9 @@ namespace _2048AI
     {
         public delegate double Score(Board x);
         static Score HeurScore = PreScore.DirectScore;
-
-        class EvalState
+        //public static FileStream fs;// = new FileStream("2048game_1.dat", FileMode.Create);
+        //public static BinaryWriter bw;// = new BinaryWriter(fs);
+        class Param
         {
             public Dictionary<Board, double> transTable = null;
             public int maxdepth = 0;
@@ -42,24 +44,27 @@ namespace _2048AI
                     bestmove = move;
                 }
             }
-
+            //BoardControl.Print(x);
+            //bw.Write(x);
+            //bw.Write(best);
+            
             return bestmove;
         }
         public static double ScoreToplevelMove(Board x, int move)
         {
             double res;
 
-            EvalState state = new EvalState();
+            Param state = new Param();
             state.transTable = new Dictionary<ulong, double>();
             state.depthLimit = Math.Max(3, BoardControl.CountDistinctTiles(x) - 2);
 
             res = _ScoreToplevelMove(state, x, move);
 
-            Console.WriteLine("Move " + move.ToString() + ": result " + res.ToString() + ": eval'd " + state.moves_evaled.ToString() + " moves ( " + state.cachehits.ToString() + "cache hits, " + state.transTable.Count.ToString() + " cache size)" + "(maxdepth=" + state.maxdepth.ToString() + ")");
+            //Console.WriteLine("Move " + move.ToString() + ": result " + res.ToString() + ": eval'd " + state.moves_evaled.ToString() + " moves ( " + state.cachehits.ToString() + "cache hits, " + state.transTable.Count.ToString() + " cache size)" + "(maxdepth=" + state.maxdepth.ToString() + ")");
 
             return res;
         }
-        static double _ScoreToplevelMove(EvalState state, UInt64 x, int move)
+        static double _ScoreToplevelMove(Param state, UInt64 x, int move)
         {
             UInt64 newboard = BoardControl.ExecuteMove(x, move);
 
@@ -68,9 +73,9 @@ namespace _2048AI
 
             return ScoreTilechooseNode(state, newboard, 1.0f) + 1e-6;
         }
-        static double ScoreTilechooseNode(EvalState state, UInt64 x, float cprob)
+        static double ScoreTilechooseNode(Param state, UInt64 x, float cprob)
         {
-            if (cprob < CprobTreshBase || state.curdepth >= state.depthLimit)
+            if (cprob < CprobTreshBase || state.curdepth >= 6)// || state.curdepth >= state.depthLimit)
             {
                 state.maxdepth = Math.Max(state.curdepth, state.maxdepth);
                 return HeurScore(x);
@@ -110,7 +115,7 @@ namespace _2048AI
 
             return res;
         }
-        static double ScoreMoveNode(EvalState state, UInt64 x, float cprob)
+        static double ScoreMoveNode(Param state, UInt64 x, float cprob)
         {
             double best = 0.0f;
             state.curdepth++;
