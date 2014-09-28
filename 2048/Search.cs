@@ -19,6 +19,7 @@ namespace _2048AI
             public int depth = 0;
             public int depthLimit = 0;
             public Dictionary<Board, double> scoreTable = null;
+            public Dictionary<Board, int> depthTable = null;
         }
         const double ProbTresh = 0.0001f;
         const int DictionaryLimit = 20;
@@ -50,6 +51,7 @@ namespace _2048AI
 
             Param para = new Param();
             para.scoreTable = new Dictionary<ulong, double>();
+            para.depthTable = new Dictionary<Board, int>();
             para.depthLimit = Math.Max(3, BoardControl.CountDistinctTiles(x) - 2);
             UInt64 newboard = BoardControl.ExecuteMove(x, d);
             if (x == newboard)
@@ -69,7 +71,8 @@ namespace _2048AI
             {
                 if (para.scoreTable.ContainsKey(x))
                 {
-                    return para.scoreTable[x];
+                    if (para.depthTable[x] <= para.depth)
+                        return para.scoreTable[x];
                 }
             }
 
@@ -94,6 +97,7 @@ namespace _2048AI
             if (para.depth < DictionaryLimit)
             {
                 para.scoreTable[x] = res;
+                para.depthTable[x] = para.depth;
             }
 
             return res;
