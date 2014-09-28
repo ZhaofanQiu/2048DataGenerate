@@ -21,7 +21,7 @@ namespace _2048AI
             public Dictionary<Board, double> scoreTable = null;
         }
         const double ProbTresh = 0.0001f;
-        const int DictionaryLimit = 9;
+        const int DictionaryLimit = 20;
 
         public static int SearchMove(Board x)
         {
