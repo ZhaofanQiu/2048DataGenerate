@@ -13,10 +13,10 @@ namespace _2048AI
     {
         static public int InputMove(Board x)
         {
-            var move = System.Console.ReadKey().KeyChar;
+            var d = System.Console.ReadKey().KeyChar;
             System.Console.WriteLine();
             System.Console.WriteLine();
-            switch (move)
+            switch (d)
             {
                 case 'w':
                     return 0;
@@ -80,7 +80,7 @@ namespace _2048AI
         }
         static public int SearchMove(Board x)
         {
-            return Search.FindBestMove(x);
+            return Search.SearchMove(x);
         }
     }
 }

@@ -11,28 +11,19 @@ namespace _2048AI
 {
     class PreScore
     {
-        const double ScoreLostPenalty = 200000.0f;
-        const double ScoreMonotonicityPower = 4.0f;
-        const double ScoreMonotonicityWeight = 47.0f;
-        const double ScoreSumPower = 3.5f;
-        const double ScoreSumWeight = 11.0f;
-        const double ScoreMergesWeight = 700.0f;
-        const double ScoreEmptyWeight = 270.0f;
-
         static double[] scoreTable = new double[65536];
         public static void Initialize()
         {
-            for (int row = 0; row < 65536; ++row)
+            for (int i = 0; i < 65536; ++i)
             {
-                int[] line = { ((row >> 0) & 0xf), ((row >> 4) & 0xf), ((row >> 8) & 0xf), ((row >> 12) & 0xf) };
+                Row row = (Row)i;
+
+                int[] num = { ((row >> 0) & 0xf), ((row >> 4) & 0xf), ((row >> 8) & 0xf), ((row >> 12) & 0xf) };
                 double sum = 0;
-                int empty = 0;
-                int merges = 0;
-                int prev = 0;
-                int counter = 0;
-                for (int i = 0; i < 4; ++i)
+                int empty = 0, merges = 0, prev = 0, counter = 0;
+                for (int j = 0; j < 4; ++j)
                 {
-                    int rank = line[i];
+                    int rank = num[j];
                     sum += Math.Pow(rank, ScoreSumPower);
                     if (rank == 0)
                     {
@@ -58,21 +49,18 @@ namespace _2048AI
                 }
                 double monotonicity_left = 0;
                 double monotonicity_right = 0;
-                for (int i = 1; i < 4; ++i)
+                for (int j = 1; j < 4; ++j)
                 {
-                    if (line[i - 1] > line[i])
+                    if (num[j - 1] > num[j])
                     {
-                        monotonicity_left += Math.Pow(line[i - 1], ScoreMonotonicityPower) - Math.Pow(line[i], ScoreMonotonicityPower);
+                        monotonicity_left += Math.Pow(num[j - 1], ScoreMonotonicityPower) - Math.Pow(num[j], ScoreMonotonicityPower);
                     }
                     else
                     {
-                        monotonicity_right += Math.Pow(line[i], ScoreMonotonicityPower) - Math.Pow(line[i - 1], ScoreMonotonicityPower);
+                        monotonicity_right += Math.Pow(num[j], ScoreMonotonicityPower) - Math.Pow(num[j - 1], ScoreMonotonicityPower);
                     }
                 }
-                scoreTable[row] = ScoreLostPenalty +
-                    ScoreEmptyWeight * empty +
-                    ScoreMergesWeight * merges -
-                    ScoreMonotonicityWeight * Math.Min(monotonicity_left, monotonicity_right) -
+                scoreTable[row] = ScoreLostPenalty + ScoreEmptyWeight * empty + ScoreMergesWeight * merges - ScoreMonotonicityWeight * Math.Min(monotonicity_left, monotonicity_right) -
                     ScoreSumWeight * sum;
             }
         }
@@ -81,5 +69,12 @@ namespace _2048AI
             return BoardControl.ScoreHelper(x, scoreTable) +
                BoardControl.ScoreHelper(BoardControl.Transpose(x), scoreTable);
         }
+        const double ScoreLostPenalty = 200000.0f;
+        const double ScoreMonotonicityPower = 4.0f;
+        const double ScoreMonotonicityWeight = 47.0f;
+        const double ScoreSumPower = 3.5f;
+        const double ScoreSumWeight = 11.0f;
+        const double ScoreMergesWeight = 700.0f;
+        const double ScoreEmptyWeight = 270.0f;
     }
 }

@@ -14,123 +14,104 @@ namespace _2048AI
     {
         public delegate double Score(Board x);
         static Score HeurScore = PreScore.DirectScore;
-        //public static FileStream fs;// = new FileStream("2048game_1.dat", FileMode.Create);
-        //public static BinaryWriter bw;// = new BinaryWriter(fs);
         class Param
         {
-            public Dictionary<Board, double> transTable = null;
-            public int maxdepth = 0;
-            public int curdepth = 0;
-            public int cachehits = 0;
-            public Board moves_evaled = 0;
+            public int depth = 0;
             public int depthLimit = 0;
+            public Dictionary<Board, double> scoreTable = null;
         }
-        const double CprobTreshBase = 0.0001f;
-        const int CacheDepthLimit = 6;
+        const double ProbTresh = 0.0001f;
+        const int DictionaryLimit = 9;
 
-        public static int FindBestMove(Board x)
+        public static int SearchMove(Board x)
         {
-            int move;
+            int d;
             double best = 0;
-            int bestmove = -1;
-
-            for (move = 0; move < 4; move++)
+            int bestd = -1;
+            double[] res = new double[4];
+            Parallel.For(0, 4, (i, loopState) =>
             {
-                double res = ScoreToplevelMove(x, move);
+                res[i] = ScoreFirstMove(x, i);
+            });
 
-                if (res > best)
+            for (d = 0; d < 4; d++)
+            {
+                if (res[d] > best)
                 {
-                    best = res;
-                    bestmove = move;
+                    best = res[d];
+                    bestd = d;
                 }
             }
-            //BoardControl.Print(x);
-            //bw.Write(x);
-            //bw.Write(best);
-            
-            return bestmove;
+            return bestd;
         }
-        public static double ScoreToplevelMove(Board x, int move)
+        public static double ScoreFirstMove(Board x, int d)
         {
             double res;
 
-            Param state = new Param();
-            state.transTable = new Dictionary<ulong, double>();
-            state.depthLimit = Math.Max(3, BoardControl.CountDistinctTiles(x) - 2);
-
-            res = _ScoreToplevelMove(state, x, move);
-
-            //Console.WriteLine("Move " + move.ToString() + ": result " + res.ToString() + ": eval'd " + state.moves_evaled.ToString() + " moves ( " + state.cachehits.ToString() + "cache hits, " + state.transTable.Count.ToString() + " cache size)" + "(maxdepth=" + state.maxdepth.ToString() + ")");
-
+            Param para = new Param();
+            para.scoreTable = new Dictionary<ulong, double>();
+            para.depthLimit = Math.Max(3, BoardControl.CountDistinctTiles(x) - 2);
+            UInt64 newboard = BoardControl.ExecuteMove(x, d);
+            if (x == newboard)
+                res = 0;
+            else
+                res = ScoreInsert(newboard, 1.0f, para) + 1e-6;
             return res;
         }
-        static double _ScoreToplevelMove(Param state, UInt64 x, int move)
+        static double ScoreInsert(UInt64 x, float prob, Param para)
         {
-            UInt64 newboard = BoardControl.ExecuteMove(x, move);
-
-            if (x == newboard)
-                return 0;
-
-            return ScoreTilechooseNode(state, newboard, 1.0f) + 1e-6;
-        }
-        static double ScoreTilechooseNode(Param state, UInt64 x, float cprob)
-        {
-            if (cprob < CprobTreshBase || state.curdepth >= 6)// || state.curdepth >= state.depthLimit)
+            if (prob < ProbTresh || para.depth >= para.depthLimit)
             {
-                state.maxdepth = Math.Max(state.curdepth, state.maxdepth);
                 return HeurScore(x);
             }
 
-            if (state.curdepth < CacheDepthLimit)
+            if (para.depth < DictionaryLimit)
             {
-                if (state.transTable.ContainsKey(x))
+                if (para.scoreTable.ContainsKey(x))
                 {
-                    state.cachehits++;
-                    return state.transTable[x];
+                    return para.scoreTable[x];
                 }
             }
 
-            int num_open = BoardControl.CountEmpty(x);
-            cprob /= num_open;
+            int num = BoardControl.CountEmpty(x);
+            prob /= num;
 
             double res = 0.0f;
             UInt64 tmp = x;
-            UInt64 tile_2 = 1;
-            while (tile_2 != 0)
+            UInt64 tile = 1;
+            while (tile != 0)
             {
                 if ((tmp & 0xf) == 0)
                 {
-                    res += ScoreMoveNode(state, x | tile_2, cprob * 0.9f) * 0.9f;
-                    res += ScoreMoveNode(state, x | (tile_2 << 1), cprob * 0.1f) * 0.1f;
+                    res += ScoreMove(x | tile, prob * 0.9f, para) * 0.9f;
+                    res += ScoreMove(x | (tile << 1), prob * 0.1f, para) * 0.1f;
                 }
                 tmp >>= 4;
-                tile_2 <<= 4;
+                tile <<= 4;
             }
-            res = res / num_open;
+            res = res / num;
 
-            if (state.curdepth < CacheDepthLimit)
+            if (para.depth < DictionaryLimit)
             {
-                state.transTable[x] = res;
+                para.scoreTable[x] = res;
             }
 
             return res;
         }
-        static double ScoreMoveNode(Param state, UInt64 x, float cprob)
+        static double ScoreMove(UInt64 x, float prob, Param para)
         {
             double best = 0.0f;
-            state.curdepth++;
-            for (int move = 0; move < 4; ++move)
+            UInt64 newboard;
+            para.depth++;
+            for (int d = 0; d < 4; ++d)
             {
-                UInt64 newboard = BoardControl.ExecuteMove(x, move);
-                state.moves_evaled++;
-
+                newboard = BoardControl.ExecuteMove(x, d);
                 if (x != newboard)
                 {
-                    best = Math.Max(best, ScoreTilechooseNode(state, newboard, cprob));
+                    best = Math.Max(best, ScoreInsert(newboard, prob, para));
                 }
             }
-            state.curdepth--;
-
+            para.depth--;
             return best;
         }
     }

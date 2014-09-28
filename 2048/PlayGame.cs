@@ -30,7 +30,7 @@ namespace _2048AI
                 if (move == 4)
                     break;
                 BoardControl.Print(board);
-                System.Console.WriteLine("\nMove #" + (++moveno).ToString() + ", current score=" + (BoardControl.Score(board) - scorepenalty).ToString() + '\n');
+                System.Console.WriteLine("Move:" + (++moveno).ToString() + ", score:" + (BoardControl.Score(board) - scorepenalty).ToString() + '\n');
                 move = Str(board);
                 if (move < 0)
                     break;
@@ -47,8 +47,7 @@ namespace _2048AI
             }
 
             BoardControl.Print(board);
-            System.Console.WriteLine("\nGame over. Your score is " + (BoardControl.Score(board) - scorepenalty).ToString() +
-            ". The highest rank you achieved was " + BoardControl.GetMaxRank(board).ToString() + ".\n");
+            System.Console.WriteLine("\nGame over. Your score is " + (BoardControl.Score(board) - scorepenalty).ToString() + ".\n");
         }
         public static double MontePlay(Strategy Str, Board board, int move = -1)
         {
