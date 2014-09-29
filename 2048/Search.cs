@@ -1,4 +1,12 @@
-﻿using System;
+﻿/*************************************************************************
+  > File Name: Search.cs
+  > Copyright (C) 2013 Zhaofan Qiu<zhaofanqiu@gmail.com>
+  > Created Time: 2014/9/19 16:28:15
+  > Functions: Search best move by maxmize mean score
+  > Reference: https://github.com/nneonneo/2048-ai
+ ************************************************************************/
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,17 +20,21 @@ namespace _2048AI
 {
     class Search
     {
-        public delegate double Score(Board x);
-        static Score HeurScore = PreScore.DirectScore;
         class Param
         {
             public int depth = 0;
             public int depthLimit = 0;
             public Dictionary<Board, double> scoreTable = null;
-        }
+        }     
+        public delegate double Score(Board x);
+        static Score HeurScore = PreScore.DirectScore;
         const double ProbTresh = 0.0001f;
         const int DictionaryLimit = 20;
-
+        /// <summary>
+        /// search best move
+        /// </summary>
+        /// <param name="x">current board</param>
+        /// <returns>next move</returns>
         public static int SearchMove(Board x)
         {
             int d;
@@ -44,6 +56,12 @@ namespace _2048AI
             }
             return bestd;
         }
+        /// <summary>
+        /// score board while pointed the next move
+        /// </summary>
+        /// <param name="x">current board</param>
+        /// <param name="d">pre-pointed next move</param>
+        /// <returns>score</returns>
         public static double ScoreFirstMove(Board x, int d)
         {
             double res;
@@ -55,10 +73,17 @@ namespace _2048AI
             if (x == newboard)
                 res = 0;
             else
-                res = ScoreInsert(newboard, 1.0f, para) + 1e-6;
+                res = ScoreNextInsert(newboard, 1.0f, para) + 1e-6;
             return res;
         }
-        static double ScoreInsert(UInt64 x, float prob, Param para)
+        /// <summary>
+        /// score while next process is insert
+        /// </summary>
+        /// <param name="x">current board</param>
+        /// <param name="prob">current board probability</param>
+        /// <param name="para">parameters of search</param>
+        /// <returns>score</returns>
+        static double ScoreNextInsert(UInt64 x, float prob, Param para)
         {
             if (para.depth < DictionaryLimit)
             {
@@ -83,8 +108,8 @@ namespace _2048AI
             {
                 if ((tmp & 0xf) == 0)
                 {
-                    res += ScoreMove(x | tile, prob * 0.9f, para) * 0.9f;
-                    res += ScoreMove(x | (tile << 1), prob * 0.1f, para) * 0.1f;
+                    res += ScoreNextMove(x | tile, prob * 0.9f, para) * 0.9f;
+                    res += ScoreNextMove(x | (tile << 1), prob * 0.1f, para) * 0.1f;
                 }
                 tmp >>= 4;
                 tile <<= 4;
@@ -98,7 +123,14 @@ namespace _2048AI
 
             return res;
         }
-        static double ScoreMove(UInt64 x, float prob, Param para)
+        /// <summary>
+        /// score while next process is move
+        /// </summary>
+        /// <param name="x">current board</param>
+        /// <param name="prob">current board probability</param>
+        /// <param name="para">parameters of search</param>
+        /// <returns>score</returns>
+        static double ScoreNextMove(UInt64 x, float prob, Param para)
         {
             double best = 0.0f;
             UInt64 newboard;
@@ -108,7 +140,7 @@ namespace _2048AI
                 newboard = BoardControl.ExecuteMove(x, d);
                 if (x != newboard)
                 {
-                    best = Math.Max(best, ScoreInsert(newboard, prob, para));
+                    best = Math.Max(best, ScoreNextInsert(newboard, prob, para));
                 }
             }
             para.depth--;

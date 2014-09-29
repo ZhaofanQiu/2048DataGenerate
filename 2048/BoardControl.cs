@@ -1,4 +1,12 @@
-﻿using System;
+﻿/*************************************************************************
+  > File Name: BoardControl.cs
+  > Copyright (C) 2013 Zhaofan Qiu<zhaofanqiu@gmail.com>
+  > Created Time: 2014/9/19 15:28:35
+  > Functions: Control 2048 Table by bitwise operation
+  > Reference: https://github.com/nneonneo/2048-ai
+ ************************************************************************/
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,44 +30,47 @@ namespace _2048AI
         static Board[] colDown = new Board[65536];
         static double[] scoreTable = new double[65536];
         #endregion StaticMethod
-
+        /// <summary>
+        /// initialize board control
+        /// </summary>
         public static void Initialize()
         {
-            for (int row = 0; row < 65536; ++row)
+            for (int i = 0; i < 65536; ++i)
             {
-                int[] line = { ((row >> 0) & 0xf), ((row >> 4) & 0xf), ((row >> 8) & 0xf), ((row >> 12) & 0xf) };
+                Row row = (Row)i;
+                int[] num = { ((row >> 0) & 0xf), ((row >> 4) & 0xf), ((row >> 8) & 0xf), ((row >> 12) & 0xf) };
                 double score = 0.0f;
-                for (int i = 0; i < 4; ++i)
+                for (int j = 0; j < 4; ++j)
                 {
-                    int rank = line[i];
+                    int rank = num[j];
                     if (rank >= 2)
                     {
                         score += (rank - 1) * (1 << rank);
                     }
                 }
                 scoreTable[row] = score;
-                for (int i = 0; i < 3; ++i)
+                for (int j = 0; j < 3; ++j)
                 {
-                    int j;
-                    for (j = i + 1; j < 4; ++j)
+                    int k;
+                    for (k = j + 1; k < 4; ++k)
                     {
-                        if (line[j] != 0) break;
+                        if (num[k] != 0) break;
                     }
-                    if (j == 4) break;
+                    if (k == 4) break;
 
-                    if (line[i] == 0)
+                    if (num[j] == 0)
                     {
-                        line[i] = line[j];
-                        line[j] = 0;
-                        i--;
+                        num[j] = num[k];
+                        num[k] = 0;
+                        j--;
                     }
-                    else if (line[i] == line[j] && line[i] != 0xf)
+                    else if (num[j] == num[k] && num[j] != 0xf)
                     {
-                        line[i]++;
-                        line[j] = 0;
+                        num[j]++;
+                        num[k] = 0;
                     }
                 }
-                Row result = (Row)((line[0] << 0) | (line[1] << 4) | (line[2] << 8) | (line[3] << 12));
+                Row result = (Row)((num[0] << 0) | (num[1] << 4) | (num[2] << 8) | (num[3] << 12));
                 Row revResult = ReverseRow(result);
                 Row revRow = ReverseRow((Row)row);
                 RowLeft[row] = (Row)(row ^ result);
@@ -70,11 +81,19 @@ namespace _2048AI
         }
         
         #region Play
+        /// <summary>
+        /// initialize a game
+        /// </summary>
+        /// <returns>original board</returns>
         public static Board InitBoard()
         {
-            Board board = DrawTile() << (4 * (new Random()).Next(16));
-            return InsertTileRand(board, DrawTile());
+            Board board = RandomTile() << (4 * new Random(DateTime.Now.Millisecond).Next(16));
+            return InsertTileRand(board, RandomTile());
         }
+        /// <summary>
+        /// print board
+        /// </summary>
+        /// <param name="x">board for print</param>
         public static void Print(Board x)
         {
             int i, j;
@@ -90,6 +109,12 @@ namespace _2048AI
             }
             Console.WriteLine();
         }
+        /// <summary>
+        /// execute move
+        /// </summary>
+        /// <param name="x">current board</param>
+        /// <param name="d">move direction</param>
+        /// <returns></returns>
         public static Board ExecuteMove(Board x, int d)
         {
             switch (d)
@@ -106,13 +131,23 @@ namespace _2048AI
                     return ~0UL;
             }
         }
-        public static Board DrawTile()
+        /// <summary>
+        /// return a random tile
+        /// </summary>
+        /// <returns></returns>
+        public static Board RandomTile()
         {
-            return (Board)(((new Random(DateTime.Now.Millisecond)).Next(10) < 9) ? 1 : 2);
+            return (Board)((new Random(DateTime.Now.Millisecond).Next(10) < 9) ? 1 : 2);
         }
+        /// <summary>
+        /// insert a tile randomly to board
+        /// </summary>
+        /// <param name="x">current board</param>
+        /// <param name="tile">tile to insert</param>
+        /// <returns>new board</returns>
         public static Board InsertTileRand(Board x, Board tile)
         {
-            int index = (new Random(DateTime.Now.Millisecond)).Next(CountEmpty(x));
+            int index = new Random(DateTime.Now.Millisecond).Next(CountEmpty(x));
             Board tmp = x;
             while (true)
             {
@@ -129,7 +164,12 @@ namespace _2048AI
             return x | tile;
         }
         #endregion Play
-
+        /// <summary>
+        /// help to calculate score of all rows
+        /// </summary>
+        /// <param name="x">current board</param>
+        /// <param name="table">score of row</param>
+        /// <returns>summation score of all rows</returns>
         public static double ScoreHelper(Board x, double[] table)
         {
             return table[(x >> 0) & RowMask] +
@@ -137,10 +177,20 @@ namespace _2048AI
                    table[(x >> 32) & RowMask] +
                    table[(x >> 48) & RowMask];
         }
+        /// <summary>
+        /// get system score of board
+        /// </summary>
+        /// <param name="x">current board</param>
+        /// <returns>summation score</returns>
         public static double Score(Board x)
         {
             return ScoreHelper(x, scoreTable); 
         }
+        /// <summary>
+        /// convert uint64 board to int[,]
+        /// </summary>
+        /// <param name="x">uint64 board</param>
+        /// <returns>board defined by int[,]</returns>
         static public int[,] BoardToInt(Board x)
         {
             int i, j;
@@ -156,6 +206,11 @@ namespace _2048AI
             }
             return num;
         }
+        /// <summary>
+        /// convert int[,] to uint64 board
+        /// </summary>
+        /// <param name="num">board defined by int[,]</param>
+        /// <returns>uint64 board</returns>
         static public Board IntToBoard(int[,] num)
         {
             Board res = 0;
@@ -176,6 +231,11 @@ namespace _2048AI
             }
             return res;
         }
+        /// <summary>
+        /// transpose board
+        /// </summary>
+        /// <param name="x">current board</param>
+        /// <returns>transposed board</returns>
         public static Board Transpose(Board x)
         {
             Board a1 = x & 0xF0F00F0FF0F00F0FUL;
@@ -187,6 +247,11 @@ namespace _2048AI
             Board b3 = a & 0x00000000FF00FF00UL;
             return b1 | (b2 >> 24) | (b3 << 24);
         }
+        /// <summary>
+        /// count empty tile of board 
+        /// </summary>
+        /// <param name="x">current board</param>
+        /// <returns>number of empty tile</returns>
         public static int CountEmpty(Board x)
         {
             x |= (x >> 2) & 0x3333333333333333UL;
@@ -198,6 +263,11 @@ namespace _2048AI
             x += x >> 4;
             return (int)(x & 0xf);
         }
+        /// <summary>
+        /// get max rank of tile
+        /// </summary>
+        /// <param name="board">current board</param>
+        /// <returns>max rank</returns>
         public static int GetMaxRank(Board board)
         {
             int maxrank = 0;
@@ -208,6 +278,11 @@ namespace _2048AI
             }
             return maxrank;
         }
+        /// <summary>
+        /// count distinct tiles on board
+        /// </summary>
+        /// <param name="x">current board</param>
+        /// <returns>number of distinct tiles</returns>
         public static int CountDistinctTiles(Board x)
         {
             Row bitset = 0;
@@ -225,6 +300,11 @@ namespace _2048AI
             }
             return count;
         }
+        /// <summary>
+        /// move up
+        /// </summary>
+        /// <param name="x">current board</param>
+        /// <returns>new board</returns>
         static Board MoveUp(Board x)
         {
             Board ret = x;
@@ -235,6 +315,11 @@ namespace _2048AI
             ret ^= colUp[(t >> 48) & RowMask] << 12;
             return ret;
         }
+        /// <summary>
+        /// move down
+        /// </summary>
+        /// <param name="x">current board</param>
+        /// <returns>new board</returns>
         static Board MoveDown(Board x)
         {
             Board ret = x;
@@ -245,6 +330,11 @@ namespace _2048AI
             ret ^= colDown[(t >> 48) & RowMask] << 12;
             return ret;
         }
+        /// <summary>
+        /// move left
+        /// </summary>
+        /// <param name="x">current board</param>
+        /// <returns>new board</returns>
         static Board MoveLeft(Board x)
         {
             Board ret = x;
@@ -254,6 +344,11 @@ namespace _2048AI
             ret ^= (Board)(RowLeft[(x >> 48) & RowMask]) << 48;
             return ret;
         }
+        /// <summary>
+        /// move right
+        /// </summary>
+        /// <param name="x">current board</param>
+        /// <returns>new board</returns>
         static Board MoveRight(Board x)
         {
             Board ret = x;
@@ -263,11 +358,21 @@ namespace _2048AI
             ret ^= (Board)(RowRight[(x >> 48) & RowMask]) << 48;
             return ret;
         }
+        /// <summary>
+        /// unpack col from Row to Board
+        /// </summary>
+        /// <param name="row">col defined by Row</param>
+        /// <returns>unpacked col</returns>
         static Board UnpackCol(Row row)
         {
             Board tmp = row;
             return (tmp | (tmp << 12) | (tmp << 24) | (tmp << 36)) & ColMask;
         }
+        /// <summary>
+        /// reverse row
+        /// </summary>
+        /// <param name="row">input row</param>
+        /// <returns>reversed row</returns>
         static Row ReverseRow(Row row)
         {
             return (Row)((row >> 12) | ((row >> 4) & 0x00F0) | ((row << 4) & 0x0F00) | (row << 12));

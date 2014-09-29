@@ -1,4 +1,12 @@
-﻿using System;
+﻿/*************************************************************************
+  > File Name: PreScore.cs
+  > Copyright (C) 2013 Zhaofan Qiu<zhaofanqiu@gmail.com>
+  > Created Time: 2014/9/19 16:01:19
+  > Functions: Score 2048 Table by Rules
+  > Reference: https://github.com/nneonneo/2048-ai
+ ************************************************************************/
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,6 +20,9 @@ namespace _2048AI
     class PreScore
     {
         static double[] scoreTable = new double[65536];
+        /// <summary>
+        /// initialize score table
+        /// </summary>
         public static void Initialize()
         {
             for (int i = 0; i < 65536; ++i)
@@ -24,7 +35,7 @@ namespace _2048AI
                 for (int j = 0; j < 4; ++j)
                 {
                     int rank = num[j];
-                    sum += Math.Pow(rank, ScoreSumPower);
+                    sum += Math.Pow(rank, SumPower);
                     if (rank == 0)
                     {
                         empty++;
@@ -47,34 +58,38 @@ namespace _2048AI
                 {
                     merges += 1 + counter;
                 }
-                double monotonicity_left = 0;
-                double monotonicity_right = 0;
+                double left = 0;
+                double right = 0;
                 for (int j = 1; j < 4; ++j)
                 {
                     if (num[j - 1] > num[j])
                     {
-                        monotonicity_left += Math.Pow(num[j - 1], ScoreMonotonicityPower) - Math.Pow(num[j], ScoreMonotonicityPower);
+                        left += Math.Pow(num[j - 1], MonotonicityPower) - Math.Pow(num[j], MonotonicityPower);
                     }
                     else
                     {
-                        monotonicity_right += Math.Pow(num[j], ScoreMonotonicityPower) - Math.Pow(num[j - 1], ScoreMonotonicityPower);
+                        right += Math.Pow(num[j], MonotonicityPower) - Math.Pow(num[j - 1], MonotonicityPower);
                     }
                 }
-                scoreTable[row] = ScoreLostPenalty + ScoreEmptyWeight * empty + ScoreMergesWeight * merges - ScoreMonotonicityWeight * Math.Min(monotonicity_left, monotonicity_right) -
-                    ScoreSumWeight * sum;
+                scoreTable[row] = LostPenalty + EmptyWeight * empty + MergesWeight * merges - MonotonicityWeight * Math.Min(left,right) - SumWeight * sum;
             }
         }
+        /// <summary>
+        /// calculate direct score by rules
+        /// </summary>
+        /// <param name="x">current board</param>
+        /// <returns>direct score</returns>
         public static double DirectScore(Board x)
         {
             return BoardControl.ScoreHelper(x, scoreTable) +
                BoardControl.ScoreHelper(BoardControl.Transpose(x), scoreTable);
         }
-        const double ScoreLostPenalty = 200000.0f;
-        const double ScoreMonotonicityPower = 4.0f;
-        const double ScoreMonotonicityWeight = 47.0f;
-        const double ScoreSumPower = 3.5f;
-        const double ScoreSumWeight = 11.0f;
-        const double ScoreMergesWeight = 700.0f;
-        const double ScoreEmptyWeight = 270.0f;
+        const double LostPenalty = 200000.0f;
+        const double MonotonicityPower = 4.0f;
+        const double MonotonicityWeight = 47.0f;
+        const double SumPower = 3.5f;
+        const double SumWeight = 11.0f;
+        const double MergesWeight = 700.0f;
+        const double EmptyWeight = 270.0f;
     }
 }
